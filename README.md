@@ -1,4 +1,32 @@
-# GeofenceBeacon — Cursor handoff
+# GeofenceBeacon — Meshtastic firmware module
+
+Repo: https://github.com/rellefsen/geofence-mesh-beacon
+
+Drop-in `GeofenceBeaconModule` for [meshtastic/firmware](https://github.com/meshtastic/firmware).
+A node stays RX-only until it is inside a GPS radius and/or a time window, then
+sends a canned text beacon. See `HANDOFF.md` for design, TX gate, fail-safes,
+and the test plan. See `APPLIED.md` for what was verified against a recent
+firmware tip.
+
+## Clone this repo
+
+```bash
+git clone https://github.com/rellefsen/geofence-mesh-beacon.git
+cd geofence-mesh-beacon
+```
+
+## Apply into firmware
+
+```bash
+git clone --recurse-submodules https://github.com/meshtastic/firmware.git
+./scripts/apply-to-firmware.sh /path/to/firmware
+# Then hand-edit Modules.cpp + Router::send (notes in patches/ and APPLIED.md)
+# Edit src/modules/GeofenceBeaconConfig.h, then:
+pio run -e heltec-v4
+```
+
+---
+
 
 Drop-in notes for adding `GeofenceBeaconModule` to a local checkout of
 [meshtastic/firmware](https://github.com/meshtastic/firmware). Start with

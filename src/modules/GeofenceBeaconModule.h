@@ -16,6 +16,7 @@
  * includes, PortNum, and GPS accessors against your firmware checkout.
  */
 
+#include "GeofenceBeaconConfig.h"
 #include "SinglePortModule.h"
 #include "concurrency/OSThread.h"
 #include "configuration.h"
