@@ -1,0 +1,50 @@
+--- a/src/mesh/Router.cpp
++++ b/src/mesh/Router.cpp
+@@ -7,6 +7,7 @@
+ #include "PositionPrecision.h"
+ #include "RTC.h"
+ 
++#include "mesh/GeofenceBeaconTxGate.h"
+ #include "configuration.h"
+ #include "main.h"
+ #include "mesh-pb-constants.h"
+@@ -293,6 +294,29 @@
+  * If the txmit queue is full it might return an error.
+  */
+ ErrorCode Router::send(meshtastic_MeshPacket *p)
+ {
+     if (isToUs(p)) {
+         LOG_ERROR("BUG! send() called with packet destined for local node!");
+         packetPool.release(p);
+         return meshtastic_Routing_Error_BAD_REQUEST;
+     } // should have already been handled by sendLocal
+ 
++    // GeofenceBeacon TX gate (UNTESTED).
++    //
++    // Do NOT flip config.lora.tx_enabled to false as a shortcut.
++    // RadioLibInterface::send() and RadioLibInterface::startSend() both
++    // drop every packet when that flag is false, including this beacon,
++    // and they see the packet only after perhapsEncode() so a portnum
++    // hole there is not possible.
++    //
++    // This gate is the originator filter: only packet ids pre-allowed by
++    // GeofenceBeaconModule pass. Relays (!isFromUs) are also dropped so
++    // this node does not mesh other traffic. Still set role CLIENT_MUTE
++    // and rebroadcast_mode NONE as defense in depth
++    // (FloodingRouter::isRebroadcaster()).
++    //
++    // Implications: NodeInfo, Position, Telemetry, phone-originated
++    // texts, and ACKs/NAKs originated here will also be dropped while
++    // the gate is on. RX is unaffected.
++    // TODO-verify: ErrorCode ERRNO_DISABLED, isFromUs(), and that
++    // ReliableRouter / FloodingRouter::send still reach Router::send.
++    if (geofenceBeaconTxGateEnabled()) {
++        if (!isFromUs(p) || !geofenceBeaconIsAllowed(p->id)) {
++            LOG_DEBUG("GeofenceBeacon TX gate dropped id=0x%08x from=0x%x", p->id, getFrom(p));
++            packetPool.release(p);
++            return ERRNO_DISABLED;
++        }
++    }
++
+     // Abort sending if we are violating the duty cycle
+     if (!config.lora.override_duty_cycle && myRegion->dutyCycle < 100) {

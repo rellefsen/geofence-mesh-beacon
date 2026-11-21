@@ -1,0 +1,47 @@
+UNTESTED registration snippet for src/modules/Modules.cpp
+
+This is not a complete unified diff because Modules.cpp includes and
+the setupModules() body change often. Apply by hand against your
+checkout of github.com/meshtastic/firmware.
+
+1) Near the other module includes (around the RangeTest include is a
+   sensible neighbor):
+
+#if !MESHTASTIC_EXCLUDE_GEOFENCEBEACON && !MESHTASTIC_EXCLUDE_GPS
+#include "modules/GeofenceBeaconModule.h"
+#endif
+
+2) Inside setupModules(), near the RangeTest construction (which on
+   master looked like):
+
+#if !MESHTASTIC_EXCLUDE_RANGETEST && !MESHTASTIC_EXCLUDE_GPS
+    if (moduleConfig.has_range_test && moduleConfig.range_test.enabled)
+        new RangeTestModule();
+#endif
+
+add:
+
+#if !MESHTASTIC_EXCLUDE_GEOFENCEBEACON && !MESHTASTIC_EXCLUDE_GPS
+    // Phase 1: hard-coded enable flag in GeofenceBeaconConfig.h.
+    // Phase 2: replace with moduleConfig.has_geofence_beacon &&
+    //          moduleConfig.geofence_beacon.enabled (new protobuf field;
+    //          do NOT reuse moduleConfig.mesh_beacon).
+    if (GEOFENCE_BEACON_ENABLED) {
+        geofenceBeaconModule = new GeofenceBeaconModule();
+    }
+#endif
+
+You will also need the #include of GeofenceBeaconConfig.h for
+GEOFENCE_BEACON_ENABLED, or include it from GeofenceBeaconModule.h
+(already done in the skeleton).
+
+3) No platformio.src_filter change should be required. Firmware compiles
+   everything under src/ automatically for these targets. TODO-verify if
+   a particular env uses a custom build_src_filter that excludes new
+   files (nRF52 envs sometimes add variant paths, they should still
+   include src/modules).
+
+4) Optional compile flag, if you want a way to drop the module without
+   editing Modules.cpp:
+
+   build_flags = -DMESHTASTIC_EXCLUDE_GEOFENCEBEACON=1
