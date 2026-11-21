@@ -14,7 +14,7 @@ Local integration checkout: `~/git/meshtastic-firmware`
 ## Local commands
 
 ```bash
-cd ~/git/geofence-mesh-beacon/geofence-mesh-beacon
+cd ~/git/geofence-mesh-beacon
 git pull
 
 # Re-copy into a firmware tree:
